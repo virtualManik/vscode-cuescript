@@ -32,6 +32,7 @@ export const all = Object.freeze<string[]>([
 
 export const unicodeFilter = Object.freeze<string[]>([
 	'**',
+	'!build/vite/playground.ts',
 
 	'!**/ThirdPartyNotices.txt',
 	'!**/ThirdPartyNotices.cli.txt',

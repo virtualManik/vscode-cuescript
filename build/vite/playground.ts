@@ -3,8 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-// allow-any-unicode-file
-
 const content = `The world has changed
 
 I feel it in the water.
@@ -56,7 +54,11 @@ For the time will soon come when hobbits will shape the fortunes of all.
 כי בקרוב יגיע הזמן שבו הוביטים יעצבו את גורלם של כולם.
 `;
 
-const model = monaco.editor.createModel(content, undefined, monaco.Uri.file('example.ts'));
+const model = monaco.editor.createModel(
+	content,
+	undefined,
+	monaco.Uri.file('example.ts'),
+);
 
 const verticalScrollbarSize = 16;
 const horizontalScrollbarSize = 12;
@@ -66,7 +68,7 @@ const editor = monaco.editor.create(document.getElementById('editor')!, {
 	minimap: { enabled: false },
 	scrollbar: {
 		horizontalScrollbarSize,
-		verticalScrollbarSize
+		verticalScrollbarSize,
 	},
 	wordWrap: 'on',
 	wrappingStrategy: 'advanced',
@@ -79,9 +81,12 @@ Object.assign(globalThis, {
 	model,
 });
 
-function registerDecoratorButton(id: string, options: monaco.editor.IModelDecorationOptions): undefined {
+function registerDecoratorButton(
+	id: string,
+	options: monaco.editor.IModelDecorationOptions,
+): undefined {
 	const checkbox = document.getElementById(id) as HTMLInputElement;
-	const knownDecorationIds = new Set<string>;
+	const knownDecorationIds = new Set<string>();
 
 	checkbox.addEventListener('change', () => {
 		const selections = editor.getSelections();
@@ -94,7 +99,11 @@ function registerDecoratorButton(id: string, options: monaco.editor.IModelDecora
 
 		selectionLoop: for (const selection of selections) {
 			let range: monaco.Range = selection;
-			const oldDecorations = model.getDecorationsInRange(selection, undefined, true);
+			const oldDecorations = model.getDecorationsInRange(
+				selection,
+				undefined,
+				true,
+			);
 
 			for (const oldDecoration of oldDecorations) {
 				if (!knownDecorationIds.has(oldDecoration.id)) {
@@ -114,7 +123,7 @@ function registerDecoratorButton(id: string, options: monaco.editor.IModelDecora
 					range.startLineNumber,
 					0,
 					range.endLineNumber,
-					model.getLineMaxColumn(range.endLineNumber)
+					model.getLineMaxColumn(range.endLineNumber),
 				);
 			}
 
@@ -128,36 +137,81 @@ function registerDecoratorButton(id: string, options: monaco.editor.IModelDecora
 		}
 	});
 
-	editor.onDidChangeCursorPosition(event => {
-		const decorations = model.getDecorationsInRange(monaco.Range.fromPositions(event.position, event.position), undefined, true);
+	editor.onDidChangeCursorPosition((event) => {
+		const decorations = model.getDecorationsInRange(
+			monaco.Range.fromPositions(event.position, event.position),
+			undefined,
+			true,
+		);
 
-		checkbox.checked = decorations.some(decoration => knownDecorationIds.has(decoration.id));
+		checkbox.checked = decorations.some((decoration) =>
+			knownDecorationIds.has(decoration.id),
+		);
 	});
 }
 
 registerDecoratorButton('small-inline', {
 	fontSize: '0.3',
-	lineHeight: 0.3
+	lineHeight: 0.3,
 });
 
 registerDecoratorButton('big-inline', {
 	fontSize: '2',
-	lineHeight: 2
+	lineHeight: 2,
 });
 
 registerDecoratorButton('big-whole-line', {
 	isWholeLine: true,
 	fontSize: '1.5',
-	lineHeight: 1.5
+	lineHeight: 1.5,
 });
 
-registerDecoratorButton('rtl', {
-	isWholeLine: true,
-	textDirection: monaco.editor.TextDirection.RTL
+const fontSize = document.getElementById('font-size') as HTMLInputElement;
+const fontSizeDecorationIds = new Set<string>();
+fontSize.addEventListener('input', () => {
+	const selections = editor.getSelections();
+	if (!selections) {
+		return;
+	}
+
+	const oldDecorationIds: string[] = [];
+	const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
+	const value = fontSize.valueAsNumber;
+	const options: monaco.editor.IModelDecorationOptions = {
+		fontSize: String(value),
+		lineHeight: value,
+	};
+
+	for (const selection of selections) {
+		let range: monaco.Range = selection;
+		const oldDecorations = model.getDecorationsInRange(
+			selection,
+			undefined,
+			true,
+		);
+
+		for (const oldDecoration of oldDecorations) {
+			if (!fontSizeDecorationIds.has(oldDecoration.id)) {
+				continue;
+			}
+
+			oldDecorationIds.push(oldDecoration.id);
+			fontSizeDecorationIds.delete(oldDecoration.id);
+			range = oldDecoration.range.plusRange(range);
+		}
+
+		if (!range.isEmpty()) {
+			newDecorations.push({ range, options });
+		}
+	}
+
+	for (const id of model.deltaDecorations(oldDecorationIds, newDecorations)) {
+		fontSizeDecorationIds.add(id);
+	}
 });
 
 const scale = document.getElementById('scale') as HTMLInputElement;
-scale.addEventListener('change', event => {
+scale.addEventListener('change', (event) => {
 	const value = scale.valueAsNumber;
 	monaco.editor.EditorZoom.setZoomLevel(value);
 });
@@ -168,9 +222,9 @@ monaco.editor.EditorZoom.onDidChangeZoomLevel((zoomLevel) => {
 	editor.updateOptions({
 		scrollbar: {
 			horizontalScrollbarSize: horizontalScrollbarSize * factor,
-			verticalScrollbarSize: verticalScrollbarSize * factor
-		}
+			verticalScrollbarSize: verticalScrollbarSize * factor,
+		},
 	});
 
-	editor.getContainerDomNode().style.width = `${256 * factor}px`;
+	editor.getContainerDomNode().style.width = `${Math.floor(256 * factor)}px`;
 });
